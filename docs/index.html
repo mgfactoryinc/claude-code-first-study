@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>あかりさんの バイブコーディング転職記</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="script.js"></script>
+<style>
+  :root{
+    --ink:#2a231d;
+    --paper:#fbf5ea;
+    --paper-shade:#efe6d2;
+    --spine:#c9a678;
+    --accent:#e26a4a;       /* 朱赤 */
+    --accent-2:#f5b04c;     /* 山吹 */
+    --peach:#f7c6a8;
+    --pink:#f2b6b6;
+    --deep:#1c1712;
+    --font-jp:"Zen Maru Gothic","Kosugi Maru","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    --font-title:"Reggae One","Zen Maru Gothic",serif;
+
+    /* ページめくりの長さ */
+    --flip-ms: 900ms;
+  }
+  html,body{margin:0;height:100%;background:var(--deep);overflow:hidden;font-family:var(--font-jp);color:var(--ink)}
+  *{box-sizing:border-box}
+
+  /* --- ステージ：中央に見開きを絶対配置しスケール --- */
+  #stage{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 20%, #3a2c22 0%, #1a1310 60%, #0f0a08 100%);
+  }
+  #book-wrap{
+    position:relative;
+    width:1500px; height:900px;
+    transform-origin: center center;
+  }
+
+  /* 本の落ち影（#book に filter を掛けると 3D が潰れるので別レイヤーに逃がす） */
+  #book-shadow{
+    position:absolute; left:1%; right:1%; top:5%; bottom:-4%;
+    background:rgba(0,0,0,.6);
+    filter: blur(40px);
+    border-radius: 50% / 14%;
+    z-index:0; pointer-events:none;
+  }
+
+  /* 小口（ページの束）＝厚みが見えると「めくった」感が出る */
+  .edge{
+    position:absolute; top:10px; bottom:10px; z-index:0;
+    background: repeating-linear-gradient(90deg, #f6eedd 0 1px, #cbbb9d 1px 2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,.45);
+    transition: width .45s ease;
+  }
+  .edge.l{ right:100%; width:6px; border-radius:5px 0 0 5px; }
+  .edge.r{ left:100%;  width:6px; border-radius:0 5px 5px 0; }
+
+  /* 本の見開き */
+  #book{
+    position:relative; z-index:1;
+    width:100%; height:100%;
+    display:flex;
+  }
+
+  /* 紙 1 枚ぶんの見た目（静止ページ／めくれる紙の表裏 で共用） */
+  .sheet{
+    position:relative;
+    background:var(--paper);
+    overflow:hidden;
+  }
+  .sheet.left{
+    border-radius: 6px 2px 2px 6px;
+    box-shadow: inset -16px 0 28px -14px rgba(0,0,0,.42);
+  }
+  .sheet.right{
+    border-radius: 2px 6px 6px 2px;
+    box-shadow: inset 16px 0 28px -14px rgba(0,0,0,.42);
+  }
+  .page{ flex:1 1 50%; }
+
+  /* 中央の綴じ */
+  #book::before{
+    content:""; position:absolute; left:50%; top:0; bottom:0;
+    width:18px; transform:translateX(-50%);
+    background: linear-gradient(90deg, rgba(0,0,0,.42), rgba(0,0,0,.06) 42%, rgba(0,0,0,.06) 58%, rgba(0,0,0,.42));
+    pointer-events:none; z-index:5;
+  }
+
+  /* 各ページの画像（見開き画像を左半分／右半分に切り出して見せる） */
+  .art{
+    position:absolute; inset:0;
+    background-repeat:no-repeat;
+    background-size: 200% 100%;
+    background-color:#fff;
+  }
+  .art.L{ background-position: left center; }
+  .art.R{ background-position: right center; }
+
+  /* ページ余白・紙質感 */
+  .sheet::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(1200px 400px at 50% -10%, rgba(0,0,0,.06), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.012) 0 2px, transparent 2px 5px);
+    mix-blend-mode:multiply;
+    z-index:8;
+  }
+
+  /* --- タイトル・ナレーション帯 --- */
+  .caption{
+    position:absolute; left:0; right:0; bottom:0;
+    padding:10px 18px 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(30,20,15,.88) 40%, rgba(30,20,15,.92) 100%);
+    color:#fff8ea;
+    font-size:15px; line-height:1.5;
+    z-index:4;
+    letter-spacing:.02em;
+  }
+  .caption .t{
+    display:block; font-family:var(--font-title);
+    color:#ffd08c; font-size:17px; margin-bottom:2px; letter-spacing:.05em;
+  }
+
+  /* --- 吹き出し --- */
+  .bubble{
+    position:absolute;
+    max-width:32%;
+    padding:12px 16px;
+    background:#fff;
+    border:2.5px solid #2a231d;
+    border-radius:26px;
+    font-size:17px; line-height:1.35;
+    font-weight:600;
+    color:var(--ink);
+    white-space:pre-line;
+    z-index:6;
+    box-shadow: 3px 4px 0 rgba(0,0,0,.12);
+    letter-spacing:.02em;
+  }
+  .bubble.akari{ background:#fff6f7; border-color:#8a3a3a; }
+  .bubble.ojisan{ background:#f4f0e2; border-color:#3a4a2a; }
+  .bubble.narration{
+    background:#fff6dc; border:2.5px dashed #8b6a2a;
+    border-radius:8px; font-weight:600;
+    color:#523a10;
+    max-width:46%;          /* 手動改行を尊重：途中で折り返させない */
+  }
+  .bubble.ojisan-narration{
+    background:#eef4f8; border:2px dashed #3a5566;
+    border-radius:8px; font-weight:600; font-size:14px;
+    color:#233948;
+    max-width:46%;
+  }
+  /* しっぽ（三角）——CSS three-borders trick */
+  .bubble::before, .bubble::after{ content:""; position:absolute; width:0; height:0; }
+  .bubble.tail-bl::before{ left:22px; bottom:-16px; border:8px solid transparent; border-top-color:#2a231d; }
+  .bubble.tail-bl::after { left:24px; bottom:-11px; border:7px solid transparent; border-top-color:inherit; border-top-color:#fff; }
+  .bubble.akari.tail-bl::after { border-top-color:#fff6f7; }
+  .bubble.ojisan.tail-bl::after{ border-top-color:#f4f0e2; }
+
+  .bubble.tail-br::before{ right:22px; bottom:-16px; border:8px solid transparent; border-top-color:#2a231d; }
+  .bubble.tail-br::after { right:24px; bottom:-11px; border:7px solid transparent; border-top-color:#fff; }
+  .bubble.akari.tail-br::after { border-top-color:#fff6f7; }
+  .bubble.ojisan.tail-br::after{ border-top-color:#f4f0e2; }
+
+  .bubble.tail-tl::before{ left:22px; top:-16px; border:8px solid transparent; border-bottom-color:#2a231d; }
+  .bubble.tail-tl::after { left:24px; top:-11px; border:7px solid transparent; border-bottom-color:#fff; }
+  .bubble.akari.tail-tl::after { border-bottom-color:#fff6f7; }
+  .bubble.ojisan.tail-tl::after{ border-bottom-color:#f4f0e2; }
+
+  .bubble.tail-tr::before{ right:22px; top:-16px; border:8px solid transparent; border-bottom-color:#2a231d; }
+  .bubble.tail-tr::after { right:24px; top:-11px; border:7px solid transparent; border-bottom-color:#fff; }
+  .bubble.akari.tail-tr::after { border-bottom-color:#fff6f7; }
+  .bubble.ojisan.tail-tr::after{ border-bottom-color:#f4f0e2; }
+
+  /* --- 用語ハイライト --- */
+  .term{
+    background: linear-gradient(transparent 55%, #ffe57a 55% 92%, transparent 92%);
+    padding:0 2px; font-weight:800;
+  }
+
+  /* --- ページ番号／柱 --- */
+  .fol{
+    position:absolute; bottom:8px; font-size:12px; color:#8a7a66;
+    letter-spacing:.15em; z-index:5;
+    font-family:"Kosugi Maru", monospace;
+  }
+  .sheet.left .fol{ left:14px; }
+  .sheet.right .fol{ right:14px; }
+
+  /* --- 表紙・裏表紙 --- */
+  .sheet.is-cover{
+    background: linear-gradient(160deg, #b53a2b 0%, #8f2418 60%, #6a1710 100%);
+    color:#fff8ea;
+  }
+  .sheet.is-cover::after{
+    background:
+      radial-gradient(600px 300px at 20% 20%, rgba(255,220,180,.15), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 2px, transparent 2px 6px);
+  }
+
+  /* =========================================================
+     ページめくり（3D）
+     左綴じ＝左→右読み。
+       進む：右ページが左へ 180° めくれる
+       戻る：左ページが右へ 180° めくれる
+     ========================================================= */
+
+  /* めくり中、まだ見せたくない側を旧ページで覆っておくレイヤー */
+  #ghost{
+    position:absolute; top:0; bottom:0; width:50%;
+    z-index:20; display:none; pointer-events:none;
+  }
+  #ghost.on{ display:block; }
+
+  /* めくれる紙 */
+  #flip{
+    position:absolute; top:0; bottom:0; width:50%;
+    z-index:30; display:none; pointer-events:none;
+    perspective: 2300px;
+  }
+  #flip.on{ display:block; }
+  /* 右ページがめくれる（進む） */
+  #flip.from-right{ left:50%; perspective-origin: 40% 50%; }
+  /* 左ページがめくれる（戻る） */
+  #flip.from-left { left:0;   perspective-origin: 60% 50%; }
+
+  #leaf{
+    position:absolute; inset:0;
+    transform-style: preserve-3d;
+    will-change: transform;
+    z-index:2;
+  }
+  #flip.from-right #leaf{ transform-origin: left center;  animation: leafToLeft  var(--flip-ms) linear forwards; }
+  #flip.from-left  #leaf{ transform-origin: right center; animation: leafToRight var(--flip-ms) linear forwards; }
+
+  .face{
+    position:absolute; inset:0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    box-shadow: 0 0 34px rgba(0,0,0,.4);
+  }
+  .face.front{ transform: rotateY(0deg); }
+  .face.back { transform: rotateY(180deg); }
+
+  /* 面の陰影：立ち上がるほど暗く、着地するほど明るく */
+  .shade{
+    position:absolute; inset:0; z-index:60; pointer-events:none; opacity:0;
+  }
+  #flip.from-right .face.front .shade{ background: linear-gradient(to right, rgba(20,12,6,.72), rgba(20,12,6,0) 66%); }
+  #flip.from-right .face.back  .shade{ background: linear-gradient(to left,  rgba(20,12,6,.72), rgba(20,12,6,0) 66%); }
+  #flip.from-left  .face.front .shade{ background: linear-gradient(to left,  rgba(20,12,6,.72), rgba(20,12,6,0) 66%); }
+  #flip.from-left  .face.back  .shade{ background: linear-gradient(to right, rgba(20,12,6,.72), rgba(20,12,6,0) 66%); }
+  #flip.on .face.front .shade{ animation: shadeFront var(--flip-ms) linear forwards; }
+  #flip.on .face.back  .shade{ animation: shadeBack  var(--flip-ms) linear forwards; }
+
+  /* 紙が落とす影：現れる側（near）と、覆われる側（far） */
+  .cast{
+    position:absolute; top:0; bottom:0; width:100%;
+    z-index:1; pointer-events:none; opacity:0;
+  }
+  #flip.from-right .cast.near{ left:0;     background: linear-gradient(to right, rgba(0,0,0,.65), rgba(0,0,0,0) 60%); }
+  #flip.from-right .cast.far { right:100%; background: linear-gradient(to left,  rgba(0,0,0,.6),  rgba(0,0,0,0) 56%); }
+  #flip.from-left  .cast.near{ left:0;     background: linear-gradient(to left,  rgba(0,0,0,.65), rgba(0,0,0,0) 60%); }
+  #flip.from-left  .cast.far { left:100%;  background: linear-gradient(to right, rgba(0,0,0,.6),  rgba(0,0,0,0) 56%); }
+  #flip.on .cast.near{ animation: castNear var(--flip-ms) linear forwards; }
+  #flip.on .cast.far { animation: castFar  var(--flip-ms) linear forwards; }
+
+  /* 進む：右ページが左へ（rotateY はマイナス方向） */
+  @keyframes leafToLeft{
+    0%  { transform: rotateX(0deg)  rotateY(0deg);
+          animation-timing-function: cubic-bezier(.55,0,.75,.55); }
+    50% { transform: rotateX(-5deg) rotateY(-90deg);
+          animation-timing-function: cubic-bezier(.25,.45,.45,1); }
+    100%{ transform: rotateX(0deg)  rotateY(-180deg); }
+  }
+  /* 戻る：左ページが右へ（rotateY はプラス方向） */
+  @keyframes leafToRight{
+    0%  { transform: rotateX(0deg)  rotateY(0deg);
+          animation-timing-function: cubic-bezier(.55,0,.75,.55); }
+    50% { transform: rotateX(-5deg) rotateY(90deg);
+          animation-timing-function: cubic-bezier(.25,.45,.45,1); }
+    100%{ transform: rotateX(0deg)  rotateY(180deg); }
+  }
+  @keyframes shadeFront{ 0%{opacity:.04} 50%{opacity:.6}  100%{opacity:.85} }
+  @keyframes shadeBack { 0%{opacity:.85} 50%{opacity:.6}  100%{opacity:0}   }
+  @keyframes castNear  { 0%{opacity:0} 22%{opacity:.9} 62%{opacity:.5}  100%{opacity:0} }
+  @keyframes castFar   { 0%{opacity:0} 46%{opacity:.3} 80%{opacity:.85} 100%{opacity:0} }
+
+  /* 本体もほんの少し沈み込ませて「動いている」感を足す */
+  #book-wrap.turning #book{ animation: bookDip var(--flip-ms) ease-in-out; }
+  @keyframes bookDip{
+    0%,100%{ transform: none }
+    50%    { transform: translateY(4px) scale(.994) }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #flip, #ghost{ display:none !important; }
+    #book-wrap.turning #book{ animation:none; }
+  }
+
+  /* --- ナビ --- */
+  .navbtn{
+    position:fixed; top:50%; transform:translateY(-50%);
+    width:56px; height:56px; border-radius:50%;
+    background:rgba(255,255,255,.08); color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; cursor:pointer; z-index:40;
+    backdrop-filter: blur(6px);
+    transition: background .15s, transform .1s, opacity .2s;
+  }
+  .navbtn:hover{ background:rgba(255,255,255,.16); }
+  .navbtn:active{ transform:translateY(-50%) scale(.94); }
+  .navbtn[disabled]{ opacity:.22; cursor:default; }
+  /* 左→右読み：右が「進む」、左が「戻る」 */
+  #prev{ left:20px; }
+  #next{ right:20px; }
+
+  /* 下部インジケータ */
+  #ind{
+    position:fixed; left:50%; bottom:14px; transform:translateX(-50%);
+    color:#fff8ea; font-size:12px; letter-spacing:.15em;
+    background:rgba(0,0,0,.35); padding:6px 14px; border-radius:20px;
+    font-family:"Kosugi Maru",monospace; z-index:40;
+  }
+
+  /* --- 表紙デザイン --- */
+  .cover-inner{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; padding:40px;
+    text-align:center;
+  }
+  .cover-title{
+    font-family:var(--font-title);
+    font-size:58px; line-height:1.18;
+    color:#fff2c8;
+    text-shadow: 3px 3px 0 rgba(0,0,0,.35);
+    letter-spacing:.02em;
+    white-space:nowrap;
+  }
+  .cover-sub{
+    font-size:20px; color:#ffe6b8; letter-spacing:.15em;
+  }
+  .cover-badge{
+    display:inline-block; padding:6px 14px; margin-top:12px;
+    border:1.5px solid #ffd08c; border-radius:20px;
+    color:#ffe6b8; font-size:13px; letter-spacing:.2em;
+  }
+  .cover-illust{
+    width:70%; max-width:520px; aspect-ratio: 1/1;
+    background: url("assets/pages/spread_05.png") right center / 200% 100% no-repeat;
+    border-radius:12px; box-shadow: 0 12px 30px rgba(0,0,0,.5);
+    border:3px solid #ffd08c;
+  }
+  .cover-note{
+    color:#ffe6b8cc; font-size:13px; margin-top:8px;
+    max-width:80%;
+  }
+  /* 表紙の下部に小さく置く断り書き */
+  .cover-fine{
+    position:absolute; left:0; right:0; bottom:26px;
+    padding:0 40px; text-align:center;
+    color:#ffe6b8; opacity:.6;
+    font-size:11px; letter-spacing:.1em; line-height:1.95;
+  }
+
+  .cover-credit{
+    margin-top:20px; padding-top:16px;
+    border-top:1px solid rgba(255,208,140,.35);
+    width:80%; max-width:430px;
+  }
+  .cover-credit .lbl{
+    display:block; font-size:10px; color:#ffd08c; opacity:.7;
+    letter-spacing:.3em; margin-bottom:6px;
+  }
+  .cover-credit .who{
+    display:block; color:#ffe6b8; font-size:13px;
+    letter-spacing:.08em; line-height:1.8;
+  }
+  .cover-credit .who b{
+    display:block; color:#fff2c8; font-size:19px;
+    font-weight:700; letter-spacing:.14em; margin-top:2px;
+  }
+  .cover-contact{
+    display:inline-block; margin-top:14px; padding:8px 22px;
+    border:1px solid #ffd08c; border-radius:20px;
+    color:#fff2c8; text-decoration:none;
+    font-size:12.5px; letter-spacing:.08em;
+    background:rgba(255,208,140,.08);
+    transition:background .15s, transform .1s;
+  }
+  .cover-contact:hover{ background:rgba(255,208,140,.26); }
+  .cover-contact:active{ transform:scale(.97); }
+
+  .cover-cta{
+    display:inline-block; margin-top:26px; padding:11px 30px;
+    border:1.5px solid #ffd08c; border-radius:24px;
+    color:#fff2c8; text-decoration:none;
+    font-size:15px; letter-spacing:.06em;
+    background:rgba(255,208,140,.1);
+    transition:background .15s, transform .1s;
+    pointer-events:auto;
+  }
+  .cover-cta:hover{ background:rgba(255,208,140,.26); }
+  .cover-cta:active{ transform:scale(.97); }
+
+  /* --- 付録マニュアルへのリンク --- */
+  #manual-link{
+    position:fixed; right:14px; top:14px; z-index:41;
+    color:#ffe6b8; font-size:12px; letter-spacing:.1em;
+    background:rgba(0,0,0,.42); padding:6px 13px; border-radius:14px;
+    font-family:"Kosugi Maru",monospace; text-decoration:none;
+    border:1px solid rgba(255,214,140,.4);
+    transition:background .15s;
+  }
+  #manual-link:hover{ background:rgba(0,0,0,.66); }
+
+  /* --- ヘルプ --- */
+  #help{
+    position:fixed; left:14px; top:14px; z-index:40;
+    color:#ffe6b8cc; font-size:12px; letter-spacing:.1em;
+    background:rgba(0,0,0,.35); padding:6px 12px; border-radius:14px;
+    font-family:"Kosugi Maru",monospace;
+    pointer-events:none;
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Reggae+One&family=Kosugi+Maru&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="stage">
+  <div id="book-wrap">
+    <div id="book-shadow"></div>
+    <div class="edge l" id="edgeL"></div>
+    <div class="edge r" id="edgeR"></div>
+
+    <div id="book">
+      <div class="page sheet left"  id="pageL"></div>
+      <div class="page sheet right" id="pageR"></div>
+
+      <!-- めくり中だけ出現：旧ページで覆うゴースト -->
+      <div id="ghost" class="sheet"></div>
+
+      <!-- めくり中だけ出現：めくれる紙（表＝いま／裏＝めくった先） -->
+      <div id="flip">
+        <div class="cast near"></div>
+        <div class="cast far"></div>
+        <div id="leaf">
+          <div class="face front sheet" id="faceFront"></div>
+          <div class="face back sheet"  id="faceBack"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="navbtn" id="prev" aria-label="前へ（戻る）">◀</button>
+<button class="navbtn" id="next" aria-label="次へ（進む）">▶</button>
+<div id="ind">— / —</div>
+<div id="help">→ キーで進む ／ ← キーで戻る（クリックは右半分＝進む）</div>
+<a id="manual-link" href="manual.html">📘 はじめかたマニュアル</a>
+
+<script>
+(() => {
+  const spreads = window.MANGA_SCRIPT;
+  const N = spreads.length;      // 12
+  const TOTAL = N + 2;           // 表紙 + 12 + 裏表紙 = 14 見開き
+
+  const wrap    = document.getElementById('book-wrap');
+  const pageL   = document.getElementById('pageL');
+  const pageR   = document.getElementById('pageR');
+  const ghost   = document.getElementById('ghost');
+  const flip    = document.getElementById('flip');
+  const faceF   = document.getElementById('faceFront');
+  const faceB   = document.getElementById('faceBack');
+  const edgeL   = document.getElementById('edgeL');
+  const edgeR   = document.getElementById('edgeR');
+  const ind     = document.getElementById('ind');
+  const btnPrev = document.getElementById('prev');
+  const btnNext = document.getElementById('next');
+
+  const FLIP_MS = 900;   // CSS の --flip-ms と揃える
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // localStorage で位置保持
+  const KEY = 'akari-manga-cursor';
+  let cur = 0;
+  try { const v = parseInt(localStorage.getItem(KEY)||'0',10); if(!Number.isNaN(v)) cur = Math.max(0, Math.min(TOTAL-1, v)); } catch(e){}
+
+  let busy = false;
+
+  /* ---------------- 内容の組み立て ---------------- */
+
+  function escapeHtml(t){ return String(t).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  function termHighlight(t){
+    const terms = [
+      'Visual Studio Code','VSCode','Claude Code for VS Code','Claude Code',
+      'Claude','クロード','Code','コード',
+      'CLAUDE.md','.md','SVG','HTML','拡張機能','作業フォルダ','エクスプローラー',
+      'バイブコーディング','日本語化'
+    ];
+    terms.sort((a,b)=>b.length-a.length);   // 長い順に置換（衝突回避）
+    let s = escapeHtml(t).replace(/\n/g,'<br>');
+    for(const w of terms){
+      const re = new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g');
+      s = s.replace(re, `<span class="term">${w}</span>`);
+    }
+    return s;
+  }
+
+  function bubbleHtml(b){
+    const tail = (b.tail && b.tail !== 'none') ? ' tail-' + b.tail : '';
+    return `<div class="bubble ${b.speaker}${tail}" style="top:${b.pos.top};left:${b.pos.left}">${termHighlight(b.text)}</div>`;
+  }
+
+  // 見開き index（0=表紙 / 1..N=本編 / TOTAL-1=裏表紙）の左右ページ HTML を返す
+  function buildSides(i){
+    if(i === 0){
+      return {
+        cover: true,
+        ind: '表紙 / 全 ' + N + ' 話',
+        // 左綴じなので「表 1」は右ページ（最初にめくる紙）
+        L: `
+          <div class="cover-inner">
+            <div class="cover-illust" aria-hidden="true"></div>
+            <div class="cover-note">副業のバーで聞いた「バイブコーディング」で、<br>わたし、ITエンジニアに転職しました。</div>
+          </div>`,
+        R: `
+          <div class="cover-inner">
+            <div class="cover-badge">A COMIC PRIMER</div>
+            <div class="cover-title">あかりさんの<br>バイブコーディング<br>転職 記</div>
+            <div class="cover-sub">〜 VSCode × Claude Code 入門 〜</div>
+            <div class="cover-badge" style="margin-top:24px">全12話 / 5分プレゼン</div>
+          </div>
+          <div class="cover-fine">
+            ※ この物語はフィクションです。<br>
+            登場する人物・団体・出来事は、すべて架空のものです。
+          </div>`
+      };
+    }
+    if(i === TOTAL - 1){
+      return {
+        cover: true,
+        ind: '完 / 全 ' + N + ' 話',
+        L: `
+          <div class="cover-inner">
+            <div class="cover-badge">おわりに</div>
+            <div class="cover-title" style="font-size:36px">今夜、あなたも<br>はじめてみませんか？</div>
+            <div class="cover-sub" style="font-size:15px; line-height:1.7; margin-top:20px">
+              ① VSCode を入れる<br>
+              ② 日本語化 + Claude Code for VS Code<br>
+              ③ 作業フォルダに CLAUDE.md<br>
+              ④ Code に、話しかけるだけ。
+            </div>
+            <a class="cover-cta" href="manual.html">📘 実際の画面で手順を見る</a>
+          </div>`,
+        R: `
+          <div class="cover-inner" style="gap:8px; padding:30px">
+            <div class="cover-illust" aria-hidden="true" style="width:56%; max-width:340px; background-image:url('assets/pages/spread_11.png'); background-position:right center; background-size:200% 100%;"></div>
+            <div class="cover-note" style="margin-top:2px">絵：AI（キャラクター設定 → 見開き12枚を一貫生成）</div>
+            <div class="cover-credit">
+              <span class="lbl">AUTHOR</span>
+              <span class="who">エムジーファクトリー株式会社<b>大沼 裕</b></span>
+              <a class="cover-contact" href="https://phr.qolms.com/embed/card" target="_blank" rel="noopener">💬 お仕事のご相談はこちら</a>
+            </div>
+          </div>
+          <div class="cover-fine">
+            ※ 本文中の製品名・サービス名は、各社の商標または登録商標です。
+          </div>`
+      };
+    }
+
+    const s = spreads[i - 1];
+    const img = `assets/pages/spread_${String(s.id).padStart(2,'0')}.png`;
+    const bL = s.bubbles.filter(b => b.side === 'L').map(bubbleHtml).join('');
+    const bR = s.bubbles.filter(b => b.side !== 'L').map(bubbleHtml).join('');
+    return {
+      cover: false,
+      ind: `第 ${s.id} 話 / 全 ${N} 話`,
+      L: `<div class="art L" style="background-image:url('${img}')"></div>
+          <div class="fol">${String(s.id*2-1).padStart(3,'0')}</div>
+          <div class="caption"><span class="t">第${s.id}話 ／ ${escapeHtml(s.title)}</span>${escapeHtml(s.narration)}</div>
+          ${bL}`,
+      R: `<div class="art R" style="background-image:url('${img}')"></div>
+          <div class="fol">${String(s.id*2).padStart(3,'0')}</div>
+          ${bR}`
+    };
+  }
+
+  // 陰影用の .shade は、めくれる紙の面にだけ足す
+  function fillSheet(el, base, html, side, isCover, withShade){
+    el.className = `${base} sheet ${side}${isCover ? ' is-cover' : ''}`.trim();
+    el.innerHTML = html + (withShade ? '<div class="shade"></div>' : '');
+  }
+
+  /* ---------------- 表示 ---------------- */
+
+  function paint(i){
+    const d = buildSides(i);
+    fillSheet(pageL, 'page', d.L, 'left',  d.cover, false);
+    fillSheet(pageR, 'page', d.R, 'right', d.cover, false);
+    ind.textContent = d.ind;
+    updateChrome();
+    preload(i);
+  }
+
+  function updateChrome(){
+    const p = cur / (TOTAL - 1);
+    edgeL.style.width = (6 + 20 * p).toFixed(1) + 'px';
+    edgeR.style.width = (6 + 20 * (1 - p)).toFixed(1) + 'px';
+    btnPrev.disabled = (cur === 0);
+    btnNext.disabled = (cur === TOTAL - 1);
+    try{ localStorage.setItem(KEY, String(cur)); }catch(e){}
+  }
+
+  const preloaded = new Set();
+  function preload(i){
+    for(const j of [i-1, i, i+1, i+2]){
+      if(j < 1 || j > N) continue;
+      const src = `assets/pages/spread_${String(j).padStart(2,'0')}.png`;
+      if(preloaded.has(src)) continue;
+      preloaded.add(src);
+      const im = new Image(); im.src = src;
+    }
+  }
+
+  /* ---------------- ページめくり ---------------- */
+
+  // delta: +1 = 進む（右ページが左へめくれる） / -1 = 戻る（左ページが右へめくれる）
+  function go(delta){
+    const target = cur + delta;
+    if(target < 0 || target > TOTAL - 1) return;
+    if(busy) return;
+
+    if(reduceMotion){ cur = target; paint(cur); return; }
+
+    busy = true;
+    const from = buildSides(cur);
+    const to   = buildSides(target);
+    const fwd  = delta > 0;
+
+    // 1) 下地はもう「めくった先」にしておく
+    //    → 持ち上がった紙の下から、次のページが現れる
+    fillSheet(pageL, 'page', to.L, 'left',  to.cover, false);
+    fillSheet(pageR, 'page', to.R, 'right', to.cover, false);
+    ind.textContent = to.ind;
+
+    // 2) まだ見せたくない側は旧ページで覆う
+    //    進む → 左半分に「いまの左ページ」／戻る → 右半分に「いまの右ページ」
+    fillSheet(ghost, '', fwd ? from.L : from.R, fwd ? 'left' : 'right', from.cover, false);
+    ghost.style.left = fwd ? '0' : '50%';
+    ghost.classList.add('on');
+
+    // 3) めくれる紙：表＝いまのページ、裏＝めくった先の反対側ページ
+    fillSheet(faceF, 'face front', fwd ? from.R : from.L, fwd ? 'right' : 'left', from.cover, true);
+    fillSheet(faceB, 'face back',  fwd ? to.L   : to.R,   fwd ? 'left'  : 'right', to.cover,   true);
+
+    // display:none → block に戻すことで CSS アニメーションを毎回リスタート
+    flip.className = '';
+    void flip.offsetWidth;
+    flip.className = 'on ' + (fwd ? 'from-right' : 'from-left');
+
+    wrap.classList.remove('turning');
+    void wrap.offsetWidth;
+    wrap.classList.add('turning');
+
+    cur = target;
+    updateChrome();
+    preload(cur);
+
+    window.setTimeout(() => {
+      flip.className = '';
+      ghost.classList.remove('on');
+      ghost.innerHTML = '';
+      faceF.innerHTML = '';
+      faceB.innerHTML = '';
+      wrap.classList.remove('turning');
+      busy = false;
+    }, FLIP_MS + 20);
+  }
+
+  const next = () => go(+1);
+  const prev = () => go(-1);
+
+  btnNext.addEventListener('click', e => { e.stopPropagation(); next(); });
+  btnPrev.addEventListener('click', e => { e.stopPropagation(); prev(); });
+
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown' || e.key === 'Enter'){ e.preventDefault(); next(); }
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace'){ e.preventDefault(); prev(); }
+    else if(e.key === 'Home'){ if(!busy){ cur = 0;         paint(cur); } }
+    else if(e.key === 'End' ){ if(!busy){ cur = TOTAL - 1; paint(cur); } }
+  });
+
+  // 画面クリックでめくり（右半分＝進む、左半分＝戻る）
+  document.getElementById('stage').addEventListener('click', (e)=>{
+    if(e.target.closest('.navbtn') || e.target.closest('a')) return;
+    if(e.clientX > window.innerWidth / 2) next(); else prev();
+  });
+
+  // スワイプ（左へ払う＝進む）
+  let sx = null;
+  document.addEventListener('touchstart', e=>{ sx = e.changedTouches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    if(sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx; sx = null;
+    if(Math.abs(dx) < 40) return;
+    if(dx < 0) next(); else prev();
+  }, {passive:true});
+
+  /* ---------------- 自動スケール ---------------- */
+  function fit(){
+    const W = 1500, H = 900, pad = 46;
+    const sw = (window.innerWidth  - pad*2) / W;
+    const sh = (window.innerHeight - pad*2 - 60) / H;
+    wrap.style.transform = `scale(${Math.min(sw, sh)})`;
+  }
+  window.addEventListener('resize', fit);
+  fit();
+  paint(cur);
+})();
+</script>
+</body>
+</html>

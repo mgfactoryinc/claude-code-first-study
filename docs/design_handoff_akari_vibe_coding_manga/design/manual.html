@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>バイブコーディング はじめかたマニュアル</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="『あかりさんのバイブコーディング転職記』付録。VSCode を入れて Claude に話しかけられるようになるまでの手順書。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Reggae+One&family=Kosugi+Maru&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2a231d;
+    --ink-soft:#6b5d4d;
+    --paper:#fbf5ea;
+    --card:#fffdf7;
+    --line:#e2d6bd;
+    --accent:#e26a4a;       /* 朱赤 */
+    --accent-2:#f5b04c;     /* 山吹 */
+    --deep:#1c1712;
+    --ok:#3f7d52;
+    --warn:#b4731a;
+    --font-jp:"Zen Maru Gothic","Kosugi Maru","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    --font-title:"Reggae One","Zen Maru Gothic",serif;
+    --mono:"Kosugi Maru",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --maxw:860px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth; scroll-padding-top:74px}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-jp); font-size:16px; line-height:1.85;
+    letter-spacing:.01em;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* ---------- 上部バー ---------- */
+  #topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(28,23,18,.94);
+    backdrop-filter:blur(8px);
+    color:#ffe6b8;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  #topbar .inner{
+    max-width:var(--maxw); margin:0 auto; padding:10px 20px;
+    display:flex; align-items:center; gap:14px; justify-content:space-between;
+  }
+  #topbar .bt{ font-family:var(--font-title); font-size:15px; color:#ffd08c; letter-spacing:.04em; }
+  #topbar a{
+    color:#ffe6b8; text-decoration:none; font-size:13px;
+    border:1px solid rgba(255,214,140,.5); border-radius:16px;
+    padding:5px 13px; white-space:nowrap;
+    font-family:"Kosugi Maru",var(--font-jp);
+    transition:background .15s;
+  }
+  #topbar a:hover{ background:rgba(255,214,140,.16); }
+
+  /* ---------- 見出し ---------- */
+  .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 20px 90px; }
+
+  header.hero{
+    padding:46px 0 30px; text-align:center;
+    border-bottom:3px double var(--line); margin-bottom:34px;
+  }
+  .hero h1{
+    font-family:var(--font-title); font-size:clamp(26px,5.4vw,40px);
+    line-height:1.35; margin:0 0 10px; color:var(--deep);
+  }
+  .hero .sub{ color:var(--ink-soft); font-size:14px; letter-spacing:.08em; margin:0 0 18px; }
+  .hero .lede{
+    display:inline-block; text-align:left;
+    background:var(--card); border:2px dashed var(--accent-2);
+    border-radius:12px; padding:14px 20px; font-size:15px;
+    max-width:560px;
+  }
+  .hero .lede b{ color:var(--accent); }
+
+  /* ---------- 目次 ---------- */
+  nav.toc{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:18px 22px; margin:0 0 42px;
+  }
+  nav.toc h2{ font-size:14px; margin:0 0 10px; letter-spacing:.14em; color:var(--ink-soft); }
+  nav.toc ol{ margin:0; padding:0; list-style:none; counter-reset:toc; }
+  nav.toc li{ counter-increment:toc; margin:0 0 4px; }
+  nav.toc a{
+    color:var(--ink); text-decoration:none; font-size:15px;
+    display:flex; gap:10px; align-items:baseline; padding:4px 0;
+    border-bottom:1px dotted transparent;
+  }
+  nav.toc a:hover{ color:var(--accent); border-bottom-color:var(--accent); }
+  nav.toc a::before{
+    content:counter(toc); font-family:var(--mono); font-size:12px;
+    color:#fff; background:var(--ink); border-radius:50%;
+    min-width:20px; height:20px; display:inline-flex;
+    align-items:center; justify-content:center; flex:0 0 auto;
+    transform:translateY(2px);
+  }
+  nav.toc .phase{
+    font-size:12px; letter-spacing:.14em; color:var(--accent);
+    margin:14px 0 6px; font-weight:700;
+  }
+  nav.toc .phase:first-of-type{ margin-top:0; }
+
+  /* ---------- ステップ ---------- */
+  section.step{ margin:0 0 54px; scroll-margin-top:74px; }
+  section.step > h2{
+    display:flex; align-items:flex-start; gap:14px;
+    font-size:clamp(19px,3.6vw,23px); line-height:1.4;
+    margin:0 0 6px; padding-bottom:12px;
+    border-bottom:2px solid var(--line);
+  }
+  .num{
+    flex:0 0 auto;
+    width:40px; height:40px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-title); font-size:19px;
+    box-shadow:0 3px 0 rgba(0,0,0,.14);
+  }
+  .step-meta{
+    font-size:12px; color:var(--ink-soft); letter-spacing:.08em;
+    margin:0 0 18px 54px;
+  }
+  section.step p{ margin:0 0 14px; }
+
+  /* ---------- 手順リスト ---------- */
+  ol.howto{ counter-reset:h; list-style:none; padding:0; margin:0 0 20px; }
+  ol.howto > li{
+    counter-increment:h; position:relative;
+    padding:0 0 0 38px; margin:0 0 14px;
+  }
+  ol.howto > li::before{
+    content:counter(h); position:absolute; left:0; top:2px;
+    width:24px; height:24px; border-radius:50%;
+    border:2px solid var(--ink); background:var(--card);
+    font-family:var(--mono); font-size:12px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  ol.howto ul{ margin:6px 0 0; padding-left:1.2em; }
+  ol.howto ul li{ margin:0 0 4px; font-size:14.5px; color:var(--ink-soft); }
+
+  /* ---------- UI ラベル・キー ---------- */
+  .ui{
+    display:inline-block; background:#fff; border:1.5px solid var(--ink);
+    border-radius:5px; padding:1px 7px; font-size:14px; font-weight:700;
+    box-shadow:1.5px 1.5px 0 rgba(0,0,0,.1);
+    white-space:nowrap; margin:0 1px;
+  }
+  kbd{
+    display:inline-block; background:linear-gradient(180deg,#fff,#eee);
+    border:1.5px solid #b9ab92; border-bottom-width:3px;
+    border-radius:5px; padding:1px 8px; font-family:var(--mono);
+    font-size:13px; font-weight:700; color:var(--deep);
+    white-space:nowrap; margin:0 1px;
+  }
+  .term{
+    background:linear-gradient(transparent 58%, #ffe57a 58% 94%, transparent 94%);
+    padding:0 2px; font-weight:800;
+  }
+  code{
+    font-family:var(--mono); background:#f2e9d6; border:1px solid var(--line);
+    border-radius:4px; padding:1px 6px; font-size:14px;
+  }
+
+  /* ---------- スクリーンショット ---------- */
+  figure.shot{
+    margin:20px 0 22px; padding:0;
+  }
+  .shot .frame{
+    position:relative; overflow:hidden;
+    border:1px solid var(--line); border-radius:12px;
+    background:#1c1712;
+    box-shadow:0 8px 22px rgba(0,0,0,.18);
+    line-height:0;
+  }
+  .shot img{ width:100%; height:auto; display:block; }
+  .shot.narrow{ max-width:420px; }
+  .shot.mini{ max-width:260px; }
+  .shot figcaption{
+    font-size:13px; color:var(--ink-soft); margin-top:9px;
+    padding-left:2px; line-height:1.6;
+  }
+  .shot .frame{ cursor:zoom-in; }
+  .shot .zoomhint{
+    position:absolute; left:8px; bottom:8px; z-index:3;
+    background:rgba(0,0,0,.6); color:#ffe6b8;
+    font-family:"Kosugi Maru",var(--font-jp); font-size:11px;
+    padding:3px 10px; border-radius:12px; line-height:1.6;
+    pointer-events:none;
+  }
+
+  /* 原寸ビューア */
+  #lightbox{
+    position:fixed; inset:0; z-index:100; display:none;
+    background:rgba(14,10,6,.93); overflow:auto;
+    padding:54px 16px 16px; text-align:center;
+  }
+  #lightbox.on{ display:block; }
+  #lightbox img{ max-width:none; width:auto; height:auto; border-radius:6px; }
+  #lightbox .close{
+    position:fixed; top:12px; right:14px; z-index:101;
+    background:rgba(255,255,255,.12); color:#ffe6b8;
+    border:1px solid rgba(255,214,140,.5); border-radius:18px;
+    padding:7px 18px; font-size:13px; cursor:pointer;
+    font-family:"Kosugi Maru",var(--font-jp);
+  }
+  #lightbox .close:hover{ background:rgba(255,255,255,.22); }
+  body.locked{ overflow:hidden; }
+
+  /* 注目させたい一点をスポットライトで囲う */
+  .hl{
+    position:absolute;
+    border:3px solid var(--accent);
+    border-radius:6px;
+    box-shadow:0 0 0 9999px rgba(20,14,8,.55), 0 0 14px rgba(226,106,74,.9);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ border-color:var(--accent); }
+    50%    { border-color:var(--accent-2); }
+  }
+  /* 番号つきの吹き出しマーカー */
+  .mk{
+    position:absolute; transform:translate(-50%,-50%);
+    width:26px; height:26px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    font-family:var(--mono); font-size:14px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid #fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.6);
+    line-height:1;
+  }
+  ol.legend{ counter-reset:lg; list-style:none; padding:0; margin:14px 0 0; }
+  ol.legend li{
+    counter-increment:lg; position:relative;
+    padding:0 0 0 34px; margin:0 0 9px;
+    font-size:14.5px; line-height:1.75;
+  }
+  ol.legend li::before{
+    content:counter(lg); position:absolute; left:0; top:4px;
+    width:24px; height:24px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    font-family:var(--mono); font-size:13px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- 注記ボックス ---------- */
+  .note{
+    border-left:5px solid var(--accent-2);
+    background:#fff8e6; border-radius:0 10px 10px 0;
+    padding:13px 18px; margin:16px 0; font-size:14.5px;
+  }
+  .note.warn{ border-left-color:var(--accent); background:#fdeee9; }
+  .note.tip { border-left-color:var(--ok);     background:#eef6ef; }
+  .note .t{ display:block; font-weight:800; margin-bottom:4px; font-size:13px; letter-spacing:.06em; }
+  .note.warn .t{ color:#a33c22; }
+  .note.tip  .t{ color:var(--ok); }
+  .note      .t{ color:var(--warn); }
+  .note p:last-child{ margin-bottom:0; }
+
+  .manga-ref{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--deep); color:#ffd08c;
+    border-radius:16px; padding:4px 13px; font-size:12.5px;
+    letter-spacing:.06em; text-decoration:none;
+    font-family:"Kosugi Maru",var(--font-jp);
+  }
+  .manga-ref:hover{ background:#3a2c22; }
+
+  /* ---------- コードブロック ---------- */
+  .codewrap{ position:relative; margin:16px 0 20px; }
+  .codewrap pre{
+    margin:0; background:var(--deep); color:#f4ead6;
+    border-radius:12px; padding:20px 20px 20px;
+    overflow-x:auto; font-family:var(--mono);
+    font-size:13.5px; line-height:1.85; letter-spacing:.02em;
+  }
+  .codewrap pre .c{ color:#ffb27a; }
+  .codewrap .copy{
+    position:absolute; top:10px; right:10px;
+    background:rgba(255,255,255,.1); color:#ffe6b8;
+    border:1px solid rgba(255,214,140,.45); border-radius:14px;
+    padding:4px 13px; font-size:12px; cursor:pointer;
+    font-family:"Kosugi Maru",var(--font-jp);
+    transition:background .15s;
+  }
+  .codewrap .copy:hover{ background:rgba(255,255,255,.2); }
+  .codewrap .copy.done{ background:var(--ok); border-color:var(--ok); color:#fff; }
+
+  /* ---------- 表 ---------- */
+  .tablewrap{ overflow-x:auto; margin:16px 0 20px; }
+  table{
+    width:100%; border-collapse:collapse; font-size:14.5px;
+    background:var(--card); min-width:460px;
+  }
+  th,td{ border:1px solid var(--line); padding:10px 13px; text-align:left; vertical-align:top; }
+  th{ background:#f3e9d4; font-weight:800; white-space:nowrap; }
+  td:first-child{ white-space:nowrap; }
+
+  /* ---------- 折りたたみ ---------- */
+  details{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:10px; padding:0 18px; margin:0 0 10px;
+  }
+  details[open]{ padding-bottom:6px; }
+  summary{
+    cursor:pointer; padding:13px 0; font-weight:700; font-size:15px;
+    list-style:none; display:flex; gap:9px; align-items:center;
+  }
+  summary::-webkit-details-marker{ display:none }
+  summary::before{
+    content:"？"; flex:0 0 auto;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    font-size:12px; display:flex; align-items:center; justify-content:center;
+  }
+  details p{ margin:0 0 12px; font-size:14.5px; }
+
+  /* ---------- 終わり ---------- */
+  .finish{
+    margin-top:50px; padding:30px 26px; text-align:center;
+    background:linear-gradient(160deg,#b53a2b,#8f2418 60%,#6a1710);
+    color:#ffe6b8; border-radius:16px;
+    box-shadow:0 10px 28px rgba(0,0,0,.25);
+  }
+  .finish h2{ font-family:var(--font-title); font-size:24px; margin:0 0 10px; color:#fff2c8; }
+  .finish p{ margin:0 auto 18px; max-width:460px; font-size:14.5px; }
+  .finish a{
+    display:inline-block; color:#fff2c8; text-decoration:none;
+    border:1.5px solid #ffd08c; border-radius:22px;
+    padding:9px 26px; font-size:14px; letter-spacing:.06em;
+    transition:background .15s;
+  }
+  .finish a:hover{ background:rgba(255,208,140,.2); }
+
+  footer{
+    margin-top:38px; padding-top:26px; text-align:center;
+    border-top:1px solid var(--line);
+  }
+  footer .f-lbl{
+    display:block; font-size:10px; letter-spacing:.3em;
+    color:var(--accent); margin-bottom:6px;
+  }
+  footer .f-who{ font-size:14px; color:var(--ink); letter-spacing:.06em; }
+  footer .f-who b{ font-size:17px; letter-spacing:.12em; }
+  footer .f-contact{
+    display:inline-block; margin-top:14px; padding:9px 24px;
+    border:1.5px solid var(--accent); border-radius:22px;
+    color:var(--accent); text-decoration:none;
+    font-size:13px; letter-spacing:.06em; background:var(--card);
+    transition:background .15s, color .15s;
+  }
+  footer .f-contact:hover{ background:var(--accent); color:#fff; }
+  footer .f-note{
+    margin-top:22px; font-size:12px; color:var(--ink-soft);
+    letter-spacing:.06em; line-height:2;
+  }
+
+  /* ---------- 印刷 ---------- */
+  @media print{
+    :root{ --maxw:100%; }
+    body{ background:#fff; font-size:11pt; }
+    #topbar, nav.toc, .codewrap .copy{ display:none !important; }
+    .hl{ box-shadow:none; animation:none; }
+    section.step{ break-inside:avoid; margin-bottom:26px; }
+    figure.shot{ break-inside:avoid; }
+    .shot .frame{ box-shadow:none; cursor:auto; }
+    .shot .zoomhint, #lightbox{ display:none !important; }
+    .finish{ background:#fff; color:var(--ink); border:2px solid var(--ink); box-shadow:none; }
+    .finish h2, .finish a{ color:var(--ink); }
+    details{ break-inside:avoid; }
+    details:not([open]) > *:not(summary){ display:revert; }
+    a[href^="http"]::after{ content:" (" attr(href) ")"; font-size:9pt; color:#555; }
+  }
+
+  @media (max-width:560px){
+    body{ font-size:15px; }
+    .wrap{ padding:0 15px 70px; }
+    .num{ width:34px; height:34px; font-size:16px; }
+    .step-meta{ margin-left:48px; }
+    #topbar .bt{ font-size:13px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="inner">
+    <span class="bt">はじめかたマニュアル</span>
+    <a href="index.html">← 漫画にもどる</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <h1>バイブコーディング<br>はじめかたマニュアル</h1>
+  <p class="sub">『あかりさんの バイブコーディング転職記』付録</p>
+  <div class="lede">
+    漫画であかりさんがやっていたことを、<b>実際の画面で</b>たどります。<br>
+    ゴールは「<b>Claude に話しかけられる状態</b>」になること。だいたい <b>15〜20分</b>。<br>
+    プログラミングの知識はいりません。書くのは日本語だけです。
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>もくじ</h2>
+  <p class="phase">準備編 ── 道具をそろえる</p>
+  <ol>
+    <li><a href="#s1">VSCode を入れる</a></li>
+    <li><a href="#s2">画面を日本語にする</a></li>
+    <li><a href="#s3">Claude Code を入れる</a></li>
+  </ol>
+  <p class="phase">実践編 ── 話しかけるまで</p>
+  <ol start="4" style="counter-reset:toc 3">
+    <li><a href="#s4">作業フォルダを作って開く</a></li>
+    <li><a href="#s5">「制限モード」を解除する</a></li>
+    <li><a href="#s6">画面の見かたを覚える</a></li>
+    <li><a href="#s7">CLAUDE.md を作る</a></li>
+    <li><a href="#s8">話しかけてみる</a></li>
+  </ol>
+  <p class="phase">おまけ</p>
+  <ol start="9" style="counter-reset:toc 8">
+    <li><a href="#cheat">ショートカット早見表</a></li>
+    <li><a href="#trouble">つまずいたら</a></li>
+    <li><a href="#words">用語ミニ辞典</a></li>
+  </ol>
+</nav>
+
+<!-- ============ STEP 1 ============ -->
+<section class="step" id="s1">
+  <h2><span class="num">1</span>VSCode を入れる</h2>
+  <p class="step-meta">所要 5分 ／ 漫画 第4話・第7話</p>
+
+  <p><span class="term">Visual Studio Code</span>（通称 <span class="term">VSCode</span>）は、無料の「プログラミング用のメモ帳」です。Windows でも Mac でも使えます。まずはこれを入れます。</p>
+
+  <ol class="howto">
+    <li>
+      <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com</a> を開く
+    </li>
+    <li>
+      大きな <span class="ui">Download</span> ボタンを押す
+      <ul><li>自分のパソコン（Windows / Mac）に合ったものが自動で選ばれます</li></ul>
+    </li>
+    <li>
+      ダウンロードしたファイルを開いて、インストールする
+      <ul><li>途中の選択肢は、基本そのまま「次へ」で進んで大丈夫です</li></ul>
+    </li>
+  </ol>
+
+  <div class="note tip">
+    <span class="t">Windows の人へ</span>
+    <p>インストール時に「<b>エクスプローラーのコンテキストメニューに『Code で開く』アクションを追加する</b>」という項目があれば、チェックを入れておくと <a href="#s4">STEP 4</a> がラクになります。</p>
+  </div>
+
+  <a class="manga-ref" href="index.html">📖 漫画で見る（第4話・第7話）</a>
+</section>
+
+<!-- ============ STEP 2 ============ -->
+<section class="step" id="s2">
+  <h2><span class="num">2</span>画面を日本語にする</h2>
+  <p class="step-meta">所要 2分 ／ 漫画 第7話</p>
+
+  <p>入れたばかりの VSCode は英語です。<span class="term">日本語化</span>しておくと、この先がぐっとラクになります。</p>
+
+  <ol class="howto">
+    <li>左端のアイコンが縦に並んだ帯（アクティビティバー）から、<b>四角が4つ組み合わさったアイコン</b>（<span class="ui">拡張機能</span>）をクリック</li>
+    <li>検索欄に <code>Japanese</code> と入力</li>
+    <li>
+      <span class="ui">Japanese Language Pack for Visual Studio Code</span> を選んで <span class="ui">Install</span>
+      <ul><li>発行元が <b>Microsoft</b> のものを選んでください</li></ul>
+    </li>
+    <li>右下に出る <span class="ui">Change Language and Restart</span> を押して再起動</li>
+  </ol>
+
+  <p>再起動すると、メニューが日本語になります。この先の説明は、すべて日本語表示を前提にしています。</p>
+</section>
+
+<!-- ============ STEP 3 ============ -->
+<section class="step" id="s3">
+  <h2><span class="num">3</span>Claude Code を入れる</h2>
+  <p class="step-meta">所要 2分 ／ 漫画 第5話・第8話</p>
+
+  <p>ここが本番の道具です。<span class="term">Claude</span> が AI 本体の名前、<span class="term">Code</span> がそれにお願いするための窓口。VSCode の中にこの窓口を追加します。</p>
+
+  <ol class="howto">
+    <li>もう一度、左端の <span class="ui">拡張機能</span> アイコンをクリック</li>
+    <li>検索欄に <code>Claude Code</code> と入力</li>
+    <li>見つかった拡張機能を <span class="ui">インストール</span></li>
+  </ol>
+
+  <div class="note">
+    <span class="t">アカウントについて</span>
+    <p>初回は Claude のアカウントでサインインを求められます。画面の案内にしたがって進めてください。会社のアカウントを使う場合は、事前に管理者に確認を。</p>
+  </div>
+
+  <a class="manga-ref" href="index.html">📖 漫画で見る（第5話・第8話）</a>
+</section>
+
+<!-- ============ STEP 4 ============ -->
+<section class="step" id="s4">
+  <h2><span class="num">4</span>作業フォルダを作って開く</h2>
+  <p class="step-meta">所要 2分 ／ 漫画 第8話</p>
+
+  <p>AI には「どのフォルダで作業するか」を教えてあげる必要があります。まず、<span class="term">作業フォルダ</span>を1つ用意しましょう。</p>
+
+  <ol class="howto">
+    <li>
+      デスクトップなど、分かりやすい場所に新しいフォルダを作る
+      <ul><li>名前は何でもOK。ここでは <code>勉強会</code> にしています</li></ul>
+    </li>
+    <li>そのフォルダを<b>右クリック</b></li>
+    <li>メニューの中から <span class="ui">Code で開く</span> を選ぶ</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="frame">
+      <img src="images/Windows右クリック.png" alt="Windows のエクスプローラーでフォルダを右クリックしたときのメニュー。「Code で開く」が含まれている">
+      <div class="hl" style="left:35.2%; top:68.0%; width:46.6%; height:4.5%"></div>
+    </div>
+    <figcaption>フォルダを右クリック →「Code で開く」。これで、そのフォルダが VSCode の作業対象になります。</figcaption>
+  </figure>
+
+  <div class="note">
+    <span class="t">メニューに出てこないときは</span>
+    <p>Windows 11 では <span class="ui">その他のオプションを確認</span> の中に隠れていることがあります。それでも無い場合は、VSCode を先に起動して <span class="ui">ファイル</span> → <span class="ui">フォルダーを開く</span> から選んでもまったく同じです。</p>
+  </div>
+</section>
+
+<!-- ============ STEP 5 ============ -->
+<section class="step" id="s5">
+  <h2><span class="num">5</span>「制限モード」を解除する</h2>
+  <p class="step-meta">所要 30秒 ／ ここでつまずく人がいちばん多い</p>
+
+  <p>フォルダを開いた直後、VSCode は<b>安全のため「制限モード」</b>になっています。このままだと拡張機能が十分に動かず、<b>AI にお願いしても反応しません</b>。</p>
+
+  <p>画面の上に <span class="ui">制限モードは、安全なコード参照のためのものです。…</span> という帯が出ていたら、<span class="ui">管理</span> を押してください。次の画面になります。</p>
+
+  <figure class="shot">
+    <div class="frame">
+      <img src="images/制限モードの解除.png" alt="「制限モードになっています」というワークスペースの信頼画面。左側に「信頼する」ボタンがある">
+      <div class="hl" style="left:24.0%; top:67.8%; width:8.6%; height:4.0%"></div>
+    </div>
+    <figcaption>左側の <span class="ui">信頼する</span> を押せば解除完了です（<kbd>Ctrl</kbd>＋<kbd>Enter</kbd> でも同じ）。右側の赤い ✕ が並んでいるのが、いまの「制限された状態」です。</figcaption>
+  </figure>
+
+  <div class="note warn">
+    <span class="t">信頼していいのは、自分で作ったフォルダだけ</span>
+    <p>「信頼する」は、そのフォルダの中身を VSCode に実行させてよい、という意味です。<b>自分で作ったフォルダ</b>や、<b>出どころが確かなフォルダ</b>だけにしてください。ネットで拾ってきた知らないフォルダは、そのまま信頼しないこと。</p>
+  </div>
+</section>
+
+<!-- ============ STEP 6 ============ -->
+<section class="step" id="s6">
+  <h2><span class="num">6</span>画面の見かたを覚える</h2>
+  <p class="step-meta">所要 3分 ／ 覚えるのは5か所だけ</p>
+
+  <p>ここが VSCode の基本画面です。ボタンがたくさんありますが、<b>最初に覚えるのは5か所だけ</b>で足ります。</p>
+
+  <figure class="shot">
+    <div class="frame">
+      <img src="images/VSCode基本画面.png" alt="VSCode の基本画面。左にエクスプローラー、右にチャットパネル、上に制限モードの帯が表示されている">
+      <span class="mk" style="left:13%;  top:11.5%">1</span>
+      <span class="mk" style="left:22%;  top:4.9%">2</span>
+      <span class="mk" style="left:81.5%;top:8.2%">3</span>
+      <span class="mk" style="left:90%;  top:86.3%">4</span>
+      <span class="mk" style="left:2.5%; top:37.6%">5</span>
+    </div>
+    <figcaption>数字の場所だけ覚えれば大丈夫です。</figcaption>
+    <ol class="legend">
+      <li><b>エクスプローラー</b>：いま開いている作業フォルダの中身。ここにファイルが並びます。</li>
+      <li><b>制限モードの帯</b>：これが出ていたら <a href="#s5">STEP 5</a> がまだです。先に解除してください。</li>
+      <li><b>チャット</b>：ここが Claude と話す場所。漫画でいう「お願い窓口」です。</li>
+      <li><b>入力欄</b>：ここに<b>日本語で</b>お願いを書いて送ります。コードを書く必要はありません。</li>
+      <li><b>アクティビティバー</b>：拡張機能の追加（<a href="#s2">STEP 2</a>・<a href="#s3">STEP 3</a>）もここから。</li>
+    </ol>
+  </figure>
+
+  <div class="note tip">
+    <span class="t">チャットが見当たらないときは</span>
+    <p><kbd>Ctrl</kbd>＋<kbd>Alt</kbd>＋<kbd>I</kbd> を押すとチャットが開きます（Mac は <kbd>⌘</kbd>＋<kbd>Option</kbd>＋<kbd>I</kbd>）。</p>
+  </div>
+</section>
+
+<!-- ============ STEP 7 ============ -->
+<section class="step" id="s7">
+  <h2><span class="num">7</span>CLAUDE.md を作る</h2>
+  <p class="step-meta">所要 3分 ／ 漫画 第6話</p>
+
+  <p><span class="term">CLAUDE.md</span> は、<b>AI への「お願いレター」</b>です。作業フォルダに置いておくと、Claude が毎回これを読んでから動いてくれます。「日本語で答えて」「初心者なので噛みくだいて」といったことを、毎回書かなくてよくなります。</p>
+
+  <p><code>.md</code> は「マークダウン」という、ただの<b>文字だけのメモ帳ファイル</b>の拡張子です。むずかしいものではありません。</p>
+
+  <ol class="howto">
+    <li>エクスプローラー（左側）の<b>何もないところ</b>を右クリック</li>
+    <li><span class="ui">新しいファイル...</span> を選ぶ</li>
+    <li>ファイル名に <code>CLAUDE.md</code> と入力して <kbd>Enter</kbd></li>
+  </ol>
+
+  <figure class="shot narrow">
+    <div class="frame">
+      <img src="images/新しいファイルを作成.png" alt="VSCode のエクスプローラーで右クリックしたメニュー。一番上に「新しいファイル...」がある">
+      <div class="hl" style="left:16.5%; top:35.8%; width:75.5%; height:4.0%"></div>
+    </div>
+    <figcaption>エクスプローラーの空白を右クリック →「新しいファイル...」</figcaption>
+  </figure>
+
+  <figure class="shot mini">
+    <div class="frame">
+      <img src="images/ClaudeMDファイルを作成.png" alt="エクスプローラーに CLAUDE.md が作成された状態">
+      <div class="hl" style="left:7%; top:39.5%; width:43%; height:17%"></div>
+    </div>
+    <figcaption>こうなれば成功です。<b>大文字で CLAUDE.md</b> と書くのがポイント。</figcaption>
+  </figure>
+
+  <p>ファイルが開いたら、中に次のような内容を書いて保存（<kbd>Ctrl</kbd>＋<kbd>S</kbd>）します。そのままコピーして使ってかまいません。</p>
+
+  <div class="codewrap">
+    <button class="copy" type="button" data-copy="claudemd">コピー</button>
+<pre id="claudemd"><span class="c"># このフォルダについて</span>
+
+<span class="c">## わたしについて</span>
+- プログラミングは初心者です。専門用語は、かみくだいて説明してください。
+- 返事はかならず日本語でお願いします。
+
+<span class="c">## このフォルダでやりたいこと</span>
+- （例）勉強会で使う資料を作る
+
+<span class="c">## お願いごと</span>
+- ファイルを変更する前に、何をするか一言だけ教えてください。
+- うまくいかないときは、勝手に進めずに質問してください。
+- わたしが指示していないことは、やらないでください。
+</pre>
+  </div>
+
+  <div class="note tip">
+    <span class="t">中身は自由です</span>
+    <p>決まった書き方はありません。<b>新しく入った人に渡す業務メモ</b>のつもりで、自分の言葉で書けば大丈夫です。あとからいくらでも書き足せます。</p>
+  </div>
+
+  <a class="manga-ref" href="index.html">📖 漫画で見る（第6話）</a>
+</section>
+
+<!-- ============ STEP 8 ============ -->
+<section class="step" id="s8">
+  <h2><span class="num">8</span>話しかけてみる</h2>
+  <p class="step-meta">所要 1分 ／ 漫画 第9話・第10話</p>
+
+  <p>準備はこれで終わりです。あとは<b>日本語で話しかけるだけ</b>。</p>
+
+  <ol class="howto">
+    <li><kbd>Ctrl</kbd>＋<kbd>Alt</kbd>＋<kbd>I</kbd> でチャットを開く</li>
+    <li>入力欄に、やってほしいことを日本語で書く</li>
+    <li><kbd>Enter</kbd> で送信</li>
+  </ol>
+
+  <p>最初の一言に迷ったら、このあたりから。</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>やりたいこと</th><th>話しかけかたの例</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>あいさつ・動作確認</td>
+          <td>はじめまして。このフォルダには何が入っていますか？</td>
+        </tr>
+        <tr>
+          <td>資料のたたき台を作る</td>
+          <td>勉強会の資料を作りたいです。まず outline.md に見出しだけ書いてください。</td>
+        </tr>
+        <tr>
+          <td>見やすい形にしてもらう</td>
+          <td>outline.md の内容を、HTML にして見やすくしてください。</td>
+        </tr>
+        <tr>
+          <td>図を作ってもらう</td>
+          <td>この流れを図にしてください。SVG でお願いします。</td>
+        </tr>
+        <tr>
+          <td>分からないことを聞く</td>
+          <td>いま何をしたのか、初心者にも分かるように説明してください。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="t">コツは「短く、ひとつずつ」</span>
+    <p>いちどに全部お願いするより、<b>ひとつ頼んで、結果を見て、次を頼む</b>ほうがうまくいきます。違うと思ったら「そうじゃなくて、こうしてほしい」と伝えれば直してくれます。会話なので、やりなおしは何度でもできます。</p>
+  </div>
+
+  <a class="manga-ref" href="index.html">📖 漫画で見る（第9話・第10話）</a>
+</section>
+
+<!-- ============ 早見表 ============ -->
+<section class="step" id="cheat">
+  <h2><span class="num">◎</span>ショートカット早見表</h2>
+  <p class="step-meta">最初はこの3つだけで足ります</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>操作</th><th>Windows</th><th>Mac</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><b>チャットを開く</b></td><td><kbd>Ctrl</kbd>＋<kbd>Alt</kbd>＋<kbd>I</kbd></td><td><kbd>⌘</kbd>＋<kbd>Option</kbd>＋<kbd>I</kbd></td></tr>
+        <tr><td>すべてのコマンドを表示</td><td><kbd>Ctrl</kbd>＋<kbd>Shift</kbd>＋<kbd>P</kbd></td><td><kbd>⌘</kbd>＋<kbd>Shift</kbd>＋<kbd>P</kbd></td></tr>
+        <tr><td>ファイルを探して開く</td><td><kbd>Ctrl</kbd>＋<kbd>P</kbd></td><td><kbd>⌘</kbd>＋<kbd>P</kbd></td></tr>
+        <tr><td>保存する</td><td><kbd>Ctrl</kbd>＋<kbd>S</kbd></td><td><kbd>⌘</kbd>＋<kbd>S</kbd></td></tr>
+        <tr><td>元にもどす</td><td><kbd>Ctrl</kbd>＋<kbd>Z</kbd></td><td><kbd>⌘</kbd>＋<kbd>Z</kbd></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="font-size:14px; color:var(--ink-soft)">上の3つは、VSCode を開いたときの真ん中の画面にも書いてあります（<a href="#s6">STEP 6 のスクリーンショット</a>の中央）。</p>
+</section>
+
+<!-- ============ トラブル ============ -->
+<section class="step" id="trouble">
+  <h2><span class="num">◎</span>つまずいたら</h2>
+  <p class="step-meta">よくある詰まりどころ</p>
+
+  <details>
+    <summary>チャットにお願いしても、何も起きない／反応がない</summary>
+    <p>まず <b>制限モード</b> を疑ってください。画面の左下に <span class="ui">制限モード</span> と表示されていたら、まだ解除されていません。<a href="#s5">STEP 5</a> に戻って「信頼する」を押してください。</p>
+  </details>
+
+  <details>
+    <summary>右クリックしても「Code で開く」が出てこない</summary>
+    <p>Windows 11 なら <span class="ui">その他のオプションを確認</span> の中を見てください。それでも無ければ、VSCode を起動して <span class="ui">ファイル</span> → <span class="ui">フォルダーを開く</span> から選べば同じことができます。</p>
+  </details>
+
+  <details>
+    <summary>チャットのパネルが消えてしまった</summary>
+    <p><kbd>Ctrl</kbd>＋<kbd>Alt</kbd>＋<kbd>I</kbd>（Mac は <kbd>⌘</kbd>＋<kbd>Option</kbd>＋<kbd>I</kbd>）で開き直せます。</p>
+  </details>
+
+  <details>
+    <summary>AI が英語で返事をしてくる</summary>
+    <p><a href="#s7">CLAUDE.md</a> に「返事はかならず日本語でお願いします」と書いて保存してください。その場で直したいときは、チャットに「日本語でお願いします」と送るだけでも切り替わります。</p>
+  </details>
+
+  <details>
+    <summary>意図しないファイルが書き換えられた／元に戻したい</summary>
+    <p>ファイルを開いて <kbd>Ctrl</kbd>＋<kbd>Z</kbd> で戻せます。<b>大事なフォルダでいきなり試さない</b>のがいちばんの予防です。まずは空のフォルダで練習してください。</p>
+  </details>
+
+  <details>
+    <summary>そもそも自分が何をしているのか分からなくなった</summary>
+    <p>チャットに「<b>いま何をしたのか、初心者にも分かるように説明してください</b>」と送ってください。AI は、自分がやったことを説明するのも得意です。恥ずかしがらずに何度でも聞いてかまいません。</p>
+  </details>
+</section>
+
+<!-- ============ 用語 ============ -->
+<section class="step" id="words">
+  <h2><span class="num">◎</span>用語ミニ辞典</h2>
+  <p class="step-meta">漫画に出てきた言葉のおさらい</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>ことば</th><th>ざっくり言うと</th></tr></thead>
+      <tbody>
+        <tr><td><b>バイブコーディング</b></td><td>AI に話しかけて、コードを書いてもらうやり方。</td></tr>
+        <tr><td><b>VSCode</b></td><td>無料の「プログラミング用メモ帳」。作業する場所。</td></tr>
+        <tr><td><b>Claude</b></td><td>AI 本体の名前。相棒。</td></tr>
+        <tr><td><b>Code</b></td><td>Claude にお願いするための窓口。VSCode の中のチャット。</td></tr>
+        <tr><td><b>拡張機能</b></td><td>VSCode に機能を後づけする仕組み。日本語化も Claude Code もこれ。</td></tr>
+        <tr><td><b>作業フォルダ</b></td><td>「このフォルダで作業してね」と AI に示す場所。</td></tr>
+        <tr><td><b>.md</b></td><td>文字だけのメモ帳ファイルの拡張子（マークダウン）。</td></tr>
+        <tr><td><b>CLAUDE.md</b></td><td>作業フォルダに置く、AI への「お願いレター」。</td></tr>
+        <tr><td><b>制限モード</b></td><td>安全のため機能が制限された状態。信頼すると解除される。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="finish">
+  <h2>ここまでできたら、もう入口です</h2>
+  <p>あとは、やりたいことを日本語で言うだけ。<br>あかりさんも、ここから始まりました。</p>
+  <a href="index.html">📖 漫画をもう一度読む</a>
+</div>
+
+<footer>
+  <span class="f-lbl">作者</span>
+  <span class="f-who">エムジーファクトリー株式会社　<b>大沼 裕</b></span><br>
+  <a class="f-contact" href="https://phr.qolms.com/embed/card" target="_blank" rel="noopener">💬 お仕事のご相談はこちら</a>
+  <div class="f-note">
+    あかりさんの バイブコーディング転職記 ／ 付録マニュアル<br>
+    画面は Windows 版 VSCode（日本語表示）のものです。
+  </div>
+</footer>
+
+</div>
+
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="スクリーンショットの拡大表示">
+  <button class="close" type="button">✕ 閉じる</button>
+  <img alt="">
+</div>
+
+<script>
+  // スクリーンショットをクリック／タップで原寸表示（ピンチで拡大できる）
+  (() => {
+    const box = document.getElementById('lightbox');
+    const img = box.querySelector('img');
+    const open = src => {
+      img.src = src;
+      box.classList.add('on');
+      document.body.classList.add('locked');
+      box.scrollTop = 0;
+    };
+    const close = () => {
+      box.classList.remove('on');
+      document.body.classList.remove('locked');
+      img.removeAttribute('src');
+    };
+    document.querySelectorAll('.shot .frame').forEach(fr => {
+      const src = fr.querySelector('img').getAttribute('src');
+      const hint = document.createElement('span');
+      hint.className = 'zoomhint';
+      hint.textContent = '🔍 タップで拡大';
+      fr.appendChild(hint);
+      fr.addEventListener('click', () => open(src));
+    });
+    box.addEventListener('click', close);
+    box.querySelector('.close').addEventListener('click', close);
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+
+  // コードブロックのコピーボタン
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pre = document.getElementById(btn.dataset.copy);
+      if (!pre) return;
+      const text = pre.innerText;
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (e) {
+        // clipboard API が使えない環境（file:// や古いブラウザ）向けのフォールバック
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:-2000px;left:0;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+        document.body.removeChild(ta);
+      }
+      btn.textContent = ok ? 'コピーしました' : '⌘/Ctrl+C でコピー';
+      btn.classList.toggle('done', ok);
+      window.setTimeout(() => {
+        btn.textContent = 'コピー';
+        btn.classList.remove('done');
+      }, 1800);
+    });
+  });
+</script>
+</body>
+</html>

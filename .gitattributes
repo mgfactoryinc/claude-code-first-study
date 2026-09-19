@@ -1,0 +1,8 @@
+# 改行コードはリポジトリ内では LF に統一する
+* text=auto eol=lf
+
+# 画像はバイナリとして扱う（差分を取らない／Git LFS は使わない）
+# ※ GitHub Pages は Git LFS のファイルを配信できないため、LFS には載せないこと
+*.png binary
+*.jpg binary
+*.jpeg binary
