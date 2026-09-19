@@ -395,8 +395,24 @@
   .cover-contact:hover{ background:rgba(255,208,140,.26); }
   .cover-contact:active{ transform:scale(.97); }
 
+  .cover-actions{
+    display:flex; gap:12px; flex-wrap:wrap;
+    align-items:center; justify-content:center;
+    margin-top:26px;
+  }
+  .cover-url{
+    display:inline-block; margin-top:18px;
+    font-family:"Kosugi Maru",monospace;
+    font-size:14px; letter-spacing:.04em;
+    color:#ffe6b8; text-decoration:none;
+    border-bottom:1px dotted rgba(255,230,184,.55);
+    padding-bottom:2px;
+  }
+  .cover-url:hover{ color:#fff2c8; border-bottom-style:solid; }
+  .cover-url .at{ opacity:.6; margin-right:6px; }
+
   .cover-cta{
-    display:inline-block; margin-top:26px; padding:11px 30px;
+    display:inline-block; margin-top:0; padding:11px 30px;
     border:1.5px solid #ffd08c; border-radius:24px;
     color:#fff2c8; text-decoration:none;
     font-size:15px; letter-spacing:.06em;
@@ -558,7 +574,11 @@
               ③ 作業フォルダに CLAUDE.md<br>
               ④ Code に、話しかけるだけ。
             </div>
-            <a class="cover-cta" href="manual.html">📘 実際の画面で手順を見る</a>
+            <div class="cover-actions">
+              <a class="cover-cta" href="manual.html">📘 実際の画面で手順を見る</a>
+              <a class="cover-cta" href="https://github.com/mgfactoryinc/claude-code-first-study" target="_blank" rel="noopener">⌨ ソースを見る</a>
+            </div>
+            <a class="cover-url" href="https://github.com/mgfactoryinc/claude-code-first-study" target="_blank" rel="noopener"><span class="at">github.com/</span>mgfactoryinc/claude-code-first-study</a>
           </div>`,
         R: `
           <div class="cover-inner" style="gap:8px; padding:30px">

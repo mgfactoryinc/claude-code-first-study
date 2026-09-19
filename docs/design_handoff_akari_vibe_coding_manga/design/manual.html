@@ -353,6 +353,13 @@
     transition:background .15s, color .15s;
   }
   footer .f-contact:hover{ background:var(--accent); color:#fff; }
+  footer .f-url{
+    display:inline-block; margin-top:18px;
+    font-family:var(--mono); font-size:13px; letter-spacing:.03em;
+    color:var(--ink-soft); text-decoration:none;
+    border-bottom:1px dotted var(--line); padding-bottom:2px;
+  }
+  footer .f-url:hover{ color:var(--accent); border-bottom-color:var(--accent); }
   footer .f-note{
     margin-top:22px; font-size:12px; color:var(--ink-soft);
     letter-spacing:.06em; line-height:2;
@@ -795,7 +802,8 @@
 <footer>
   <span class="f-lbl">作者</span>
   <span class="f-who">エムジーファクトリー株式会社　<b>大沼 裕</b></span><br>
-  <a class="f-contact" href="https://phr.qolms.com/embed/card" target="_blank" rel="noopener">💬 お仕事のご相談はこちら</a>
+  <a class="f-contact" href="https://phr.qolms.com/embed/card" target="_blank" rel="noopener">💬 お仕事のご相談はこちら</a><br>
+  <a class="f-url" href="https://github.com/mgfactoryinc/claude-code-first-study" target="_blank" rel="noopener">ソース：github.com/mgfactoryinc/claude-code-first-study</a>
   <div class="f-note">
     あかりさんの バイブコーディング転職記 ／ 付録マニュアル<br>
     画面は Windows 版 VSCode（日本語表示）のものです。
